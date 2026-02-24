@@ -1,23 +1,15 @@
 import { Queue } from "./queue.js";
+import { BitArray } from "./bitArray.js";
 
-export function generate2DArray<T>(rows: number, cols: number, fill: T): T[][] {
-    if (!Number.isInteger(rows) || !Number.isInteger(cols)) {
-        throw new Error("rows and cols should be integers");
-    }
-
-    return Array.from({ length: rows },
-        () => Array.from({ length: cols }, () => fill)
-    );
-}
-
+// only use with primitives!
 export class Island {
     readonly rows: number;
     readonly cols: number;
     readonly rep: string;
-    private _data: boolean[][];
+    private _data: BitArray;
 
-    private static _generateIslandDataFromString(rep: string, rows: number, cols: number): boolean[][] {
-        let island: boolean[][] = generate2DArray(rows, cols, false);
+    private static _generateIslandDataFromString(rep: string, rows: number, cols: number): BitArray {
+        let island: BitArray = new BitArray(rows, cols);
 
         for (const numS of rep.split(" ")) {
             let num = parseInt(numS);
@@ -25,18 +17,18 @@ export class Island {
             let row: number = Math.trunc(num / cols);
             let col = num % cols;
 
-            island[row]![col] = true;
+            island.set(row, col, true)
         }
 
         return island;
     }
 
-    private static _getStringRepFromData(data: boolean[][], rows: number, cols: number) {
+    private static _getStringRepFromData(data: BitArray, rows: number, cols: number) {
         let stringRep = "";
 
         for (let i = 0; i < rows; i++) {
             for (let j = 0; j < cols; j++) {
-                if (data[i]![j]) {
+                if (data.get(i, j)) {
                     stringRep += (i * cols) + j;
                     stringRep += " ";
                 }
@@ -46,12 +38,12 @@ export class Island {
         return stringRep.slice(0, stringRep.length - 1);
     }
 
-    private static _generateRandomIslandData(rows: number, cols: number): boolean[][] {
-        let island: boolean[][] = generate2DArray(rows, cols, false);
+    private static _generateRandomIslandData(rows: number, cols: number): BitArray {
+        let island: BitArray = new BitArray(rows, cols);
 
         for (let i = 0; i < rows; i++) {
             for (let j = 0; j < cols; j++) {
-                island[i]![j] = Math.random() < 0.5;
+                island.set(i, j, Math.random() < 0.5);
             }
         }
 
@@ -59,7 +51,7 @@ export class Island {
     }
 
     public get(row: number, col: number): boolean {
-        return this._data[row]![col]!;
+        return this._data.get(row, col);
     }
 
     public displayAsGrid() {
@@ -75,7 +67,7 @@ export class Island {
         }
     }
 
-    private _getNumIslandsDFS(row: number, col: number, state: boolean[][]): boolean {
+    private _getNumIslandsDFS(row: number, col: number, state: BitArray): boolean {
         if (row >= this.rows) return false;
         if (row < 0) return false;
         if (col >= this.cols) return false;
@@ -83,9 +75,9 @@ export class Island {
 
         if (!this.get(row, col)) return false;
 
-        if (state[row]![col]) return false;
+        if (state.get(row, col)) return false;
 
-        state[row]![col] = true;
+        state.set(row, col, true);
 
         this._getNumIslandsDFS(row + 1, col, state);
         this._getNumIslandsDFS(row - 1, col, state);
@@ -95,34 +87,34 @@ export class Island {
         return true;
     }
 
-    private _getNumIslandsBFS(row: number, col: number, state: boolean[][]): boolean {
-        if (!this.get(row, col) || state[row]![col]) return false;
+    private _getNumIslandsBFS(row: number, col: number, state: BitArray): boolean {
+        if (!this.get(row, col) || state.get(row, col)) return false;
 
         const queue: Queue<[number, number]> = new Queue();
 
-        state[row]![col] = true;
+        state.set(row, col, true);
         queue.enqueue([row, col]);
 
         while (!queue.isEmpty()) {
             const [r, c] = queue.dequeue()!;
 
-            if (r > 0 && this.get(r - 1, c) && !state[r - 1]![c]) {
-                state[r - 1]![c] = true;
+            if (r > 0 && this.get(r - 1, c) && !state.get(r - 1, c)) {
+                state.set(r - 1, c, true);
                 queue.enqueue([r - 1, c]);
             }
 
-            if (r < this.rows - 1 && this.get(r + 1, c) && !state[r + 1]![c]) {
-                state[r + 1]![c] = true;
+            if (r < this.rows - 1 && this.get(r + 1, c) && !state.get(r + 1, c)) {
+                state.set(r + 1, c, true);
                 queue.enqueue([r + 1, c]);
             }
 
-            if (c > 0 && this.get(r, c - 1) && !state[r]![c - 1]) {
-                state[r]![c - 1] = true;
+            if (c > 0 && this.get(r, c - 1) && !state.get(r, c - 1)) {
+                state.set(r, c - 1, true);
                 queue.enqueue([r, c - 1]);
             }
 
-            if (c < this.cols - 1 && this.get(r, c + 1) && !state[r]![c + 1]) {
-                state[r]![c + 1] = true;
+            if (c < this.cols - 1 && this.get(r, c + 1) && !state.get(r, c + 1)) {
+                state.set(r, c + 1, true);
                 queue.enqueue([r, c + 1]);
             }
         }
@@ -130,8 +122,8 @@ export class Island {
         return true;
     }
 
-    private _getNumIslandsGPT(row: number, col: number, state: boolean[][]): boolean {
-        if (!this.get(row, col) || state[row]![col]) return false;
+    private _getNumIslandsGPT(row: number, col: number, state: BitArray): boolean {
+        if (!this.get(row, col) || state.get(row, col)) return false;
 
         const stack: [number, number][] = []
         stack.push([row, col]);
@@ -146,12 +138,12 @@ export class Island {
             let scanningAbove = false;
 
             for (; l < this.cols; l++) {
-                if (!this.get(r, l) || state[r]![l]) break;
+                if (!this.get(r, l) || state.get(r, l)) break;
 
-                state[r]![l] = true;
+                state.set(r, l, true);
 
                 if (r > 0) {
-                    if (!scanningAbove && this.get(r - 1, l) && !state[r - 1]![l]) {
+                    if (!scanningAbove && this.get(r - 1, l) && !state.get(r - 1, l)) {
                         stack.push([r - 1, l]);
                         scanningAbove = true;
                     } else if (scanningAbove && !this.get(r - 1, l)) {
@@ -160,7 +152,7 @@ export class Island {
                 }
 
                 if (r < this.rows - 1) {
-                    if (!scanningBelow && this.get(r + 1, l) && !state[r + 1]![l]) {
+                    if (!scanningBelow && this.get(r + 1, l) && !state.get(r + 1, l)) {
                         stack.push([r + 1, l]);
                         scanningBelow = true;
                     } else if (scanningBelow && !this.get(r + 1, l)) {
@@ -173,8 +165,8 @@ export class Island {
         return true;
     }
 
-    private _getNumIslands(searchMethod: (a: number, b: number, c: boolean[][]) => boolean): number {
-        const state = generate2DArray(this.rows, this.cols, false);
+    private _getNumIslands(searchMethod: (a: number, b: number, c: BitArray) => boolean): number {
+        const state: BitArray = new BitArray(this.rows, this.cols);
         let numIslands = 0;
 
         for (let i = 0; i < this.rows; i++) {

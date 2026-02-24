@@ -1,7 +1,6 @@
 import { readFileSync } from "node:fs";
 import { argv, exit } from "node:process";
 import { Island } from "./island.js";
-import { Queue } from "./queue.js";
 
 // async function asyncAsFallible<T, E = Error>(promise: Promise<T>): Promise<[T, null] | [null, E]> {
 //   try {
@@ -50,12 +49,14 @@ function start(): number {
     const cols = parseInt(argv[3]!);
 
     if (argv[4] === "-g" || argv[4] === "--only-gen") {
+        console.log(new Island(rows, cols).rep);
         return 0;
     }
 
     let island: Island;
 
     if (argv.length >= 5 && argv[4] !== "-s") {
+        console.log("attempting to parse " + argv[4]);
         const [data, err] = fallible(() => readFileSync(argv[4]!, "utf8"));
 
         if (data !== undefined) {
