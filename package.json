@@ -1,0 +1,19 @@
+{
+  "name": "island-ts",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "keywords": [],
+  "scripts": {
+    "run": "node dist/index.js",
+    "start": "npx tsc && node dist/index.js",
+    "build": "npx tsc"
+  },
+  "author": "skc",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "@types/node": "^25.3.0",
+    "typescript": "^5.9.3"
+  }
+}
