@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { argv, exit } from "node:process";
 import { Island } from "./island.js";
+import { Queue } from "./queue.js";
 
 // async function asyncAsFallible<T, E = Error>(promise: Promise<T>): Promise<[T, null] | [null, E]> {
 //   try {
@@ -11,12 +12,17 @@ import { Island } from "./island.js";
 //   }
 // }
 
-function fallible<T, E = Error>(fallible: () => T): [T, null] | [null, E] {
+function fallible<T, E = Error>(fallible: () => T): [T, undefined] | [undefined, E] {
     try {
         const data = fallible();
-        return [data, null];
+
+        if (Number.isNaN(data)) throw new Error("got NaN");
+        if (data === undefined) throw new Error("got undefined");
+        if (data === null) throw new Error("got null");
+
+        return [data, undefined];
     } catch (error) {
-        return [null, error as E]
+        return [undefined, error as E]
     }
 }
 
@@ -38,27 +44,26 @@ function printUsageAndExit(): number {
 }
 
 function start(): number {
-    if (argv.length !== 4 && argv.length !== 5) return (printUsageAndExit());
+    if (argv.length < 4) return (printUsageAndExit());
 
     const rows = parseInt(argv[2]!);
     const cols = parseInt(argv[3]!);
 
     if (argv[4] === "-g" || argv[4] === "--only-gen") {
-        console.log(new Island(rows, cols).rep);
         return 0;
     }
 
     let island: Island;
 
-    if (argv.length === 5) {
-        const [data, _] = fallible(() => readFileSync(argv[4]!, "utf8"));
+    if (argv.length >= 5 && argv[4] !== "-s") {
+        const [data, err] = fallible(() => readFileSync(argv[4]!, "utf8"));
 
-        if (data) {
+        if (data !== undefined) {
             island = new Island(rows, cols, data);
         } else {
             const [getAtt, _] = fallible(() => new Island(rows, cols, argv[4]));
 
-            if (!getAtt) {
+            if (getAtt === undefined) {
                 console.error(`Bad file or number sequence "${argv[4]}" (not found or unparseable)`);
                 return 1;
             }
@@ -67,11 +72,20 @@ function start(): number {
         }
     } else {
         island = new Island(rows, cols);
-        island.displayAsGrid();
     }
 
     let numIslands = 0;
     let method = Math.floor(Math.random() * 3) + 1;
+    let [secret, _] = fallible(() => parseInt(argv[5]!));
+
+    if (rows * cols < 10000) {
+        island.displayAsGrid();
+    }
+
+    if (secret !== undefined) method = secret;
+
+
+    console.log("Using method " + method);
     switch (method) {
         case 1:
             numIslands = island.getNumIslandsDFS();
@@ -83,7 +97,6 @@ function start(): number {
             numIslands = island.getNumIslandsGPT();
             break;
     }
-
 
     const pl = numIslands !== 1;
     console.log(`There ` +

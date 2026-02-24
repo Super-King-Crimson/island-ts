@@ -98,15 +98,15 @@ export class Island {
     private _getNumIslandsBFS(row: number, col: number, state: boolean[][]): boolean {
         if (!this.get(row, col) || state[row]![col]) return false;
 
-        state[row]![col] = true;
-
         const queue: Queue<[number, number]> = new Queue();
+
+        state[row]![col] = true;
         queue.enqueue([row, col]);
 
         while (!queue.isEmpty()) {
             const [r, c] = queue.dequeue()!;
 
-            if (r > 0 && this.get(r - 1, c) && !state[r]![c]) {
+            if (r > 0 && this.get(r - 1, c) && !state[r - 1]![c]) {
                 state[r - 1]![c] = true;
                 queue.enqueue([r - 1, c]);
             }
@@ -138,33 +138,32 @@ export class Island {
 
         while (stack.length > 0) {
             const [r, c] = stack.pop()!;
-            state[r]![c] = true;
 
-            let L = c;
-            while (L > 0 && this.get(r, L - 1)) L--;
+            let l = c;
+            while (l > 0 && this.get(r, l - 1)) l--;
 
             let scanningBelow = false;
             let scanningAbove = false;
 
-            for (; L < this.cols; L++) {
-                if (!this.get(r, L) || state[r]![L]) break;
+            for (; l < this.cols; l++) {
+                if (!this.get(r, l) || state[r]![l]) break;
 
-                state[r]![L] = true;
+                state[r]![l] = true;
 
                 if (r > 0) {
-                    if (!scanningAbove && this.get(r - 1, L) && !state[r - 1]![L]) {
-                        stack.push([r - 1, L]);
+                    if (!scanningAbove && this.get(r - 1, l) && !state[r - 1]![l]) {
+                        stack.push([r - 1, l]);
                         scanningAbove = true;
-                    } else if (scanningAbove && !this.get(r - 1, L)) {
+                    } else if (scanningAbove && !this.get(r - 1, l)) {
                         scanningAbove = false;
                     }
                 }
 
                 if (r < this.rows - 1) {
-                    if (!scanningBelow && this.get(r + 1, L) && !state[r + 1]![L]) {
-                        stack.push([r + 1, L]);
+                    if (!scanningBelow && this.get(r + 1, l) && !state[r + 1]![l]) {
+                        stack.push([r + 1, l]);
                         scanningBelow = true;
-                    } else if (scanningBelow && !this.get(r + 1, L)) {
+                    } else if (scanningBelow && !this.get(r + 1, l)) {
                         scanningBelow = false;
                     }
                 }
@@ -209,6 +208,9 @@ export class Island {
 
         if (rep !== undefined) {
             this._data = Island._generateIslandDataFromString(rep, rows, cols);
+            this.rep = rep;
+
+            return;
         } else {
             this._data = Island._generateRandomIslandData(rows, cols);
         }
